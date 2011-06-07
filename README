@@ -1,0 +1,49 @@
+Original work
+
+        This question type is written by Penny Leach at Liip <penny@liip.ch> and is an incomplete work in progress.
+
+        Unfortunately, it involved patching form-related code two times:
+
+        http://tracker.moodle.org/browse/MDL-18400
+        http://tracker.moodle.org/browse/MDL-18862
+
+        The patches for all of these are in the patches/ directory.
+
+        Basic spec is at http://docs.moodle.org/en/Development:Matrix_Question_Type_Specification and associated forum thread here:
+
+        http://moodle.org/mod/forum/discuss.php?d=117335
+
+        Any comments or bug reports; please email me.
+
+Backport to Moodle 1.9
+
+        laurent.opprecht@unige.ch
+        copyright 2011 University of Geneva
+
+1 make the 1.9 version compatible with the 2.0 version - i.e. uses the same name for db columns
+2 remove the need to patch moodle 1.9
+3 imcorporate changes made for 2.0
+
+Move to Moodle 2.0
+
+        laurent.opprecht@unige.ch
+        copyright 2011 University of Geneva
+
+CHANGE LOG:
+
+1   Changed the name "longtext" to description in the "column" and "row" tables. Name clashes with MySQL longtext reserved name.
+2   Upgraded DB to Moodle 2.0
+3   Added support for fill in correct responses
+5   Bug correction: submit question in preview mode does not take the last entered values
+6   Added style.css to page
+7   Changed header description html to work in other navigators than ie -
+8   Added feedback for rows
+9   Updgraded backup/restore system to Moodle 2.0
+10  Added French translations
+11  Looks like the patches are not needed anymore for Moodle 2.0.2, removing them
+12  Todo: 'save format in the database'. Still not seeing the point to change the text format. Cancelling this until someone comes with a good reason to support it.
+13  Defaulted values to type KPrime: four rows, two cols (true, false), eval method kprime.
+14  Added k' grading type
+15  Bug: general feedback was displayed twice
+16  Bug: display correct answer when reviewing
+

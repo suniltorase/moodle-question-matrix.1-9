@@ -1,0 +1,22 @@
+.qtypematrixformmatrix  td,
+.qtypematrixformmatrix  th
+{
+    text-align:center;
+}
+
+th:hover span.qtypematrixdescription, td:hover span.qtypematrixdescription {
+    display:block !important;
+    position: fixed !important;
+
+    background-color: #EEEEEE;
+    border: 1px solid #848484;
+    z-index: 10000 !important;
+    padding: 5px;
+    margin-top: 5px;
+    
+    font-weight: normal;
+}
+
+th:hover span.qtypematrixdescription p, td:hover span.qtypematrixdescription p{
+    margin:0px;
+}
