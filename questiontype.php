@@ -419,19 +419,121 @@ class matrix_qtype extends default_questiontype
     }
 
     /**
-     * Add styles.css to the page's header
+     * Backup the data in the question
+     *
+     * This is used in question/backuplib.php
      */
-//    function require_once_css() {
-    //todo:check
-//        static $done = false;
-//        if ($done) {
-//            return;
-//        }
-//        $done = true;
-//
-//        global $PAGE;
-//        $PAGE->requires->css('/question/type/' . $this->name() . '/styles.css');
-//    }
+    function backup($bf, $preferences, $question, $level=6)
+    {
+        $status = true;
+        if (!$alldata = self::load_all_data($question))
+        {
+            return $status;
+        }
+        $status = $status && fwrite($bf, start_tag('MATRIX', $level, true));
+        $status = $status && fwrite($bf, full_tag('QUESTIONID', $level + 1, false, $question));
+        $status = $status && fwrite($bf, full_tag('GRADEMETHOD', $level + 1, false, $alldata->grademethod));
+        $status = $status && fwrite($bf, full_tag('MULTIPLE', $level + 1, false, $alldata->multiple));
+        $status = $status && fwrite($bf, full_tag('RENDERER', $level + 1, false, $alldata->renderer));
+        $status = $status && fwrite($bf, start_tag('ROWS', $level + 1, true));
+        foreach ($alldata->rows as $row)
+        {
+            $status = $status && fwrite($bf, start_tag('ROW', $level + 2, true));
+            $status = $status && fwrite($bf, full_tag('ID', $level + 3, false, $row->id));
+            $status = $status && fwrite($bf, full_tag('MATRIXID', $level + 3, false, $row->matrixid));
+            $status = $status && fwrite($bf, full_tag('SHORTTEXT', $level + 3, false, $row->shorttext));
+            $status = $status && fwrite($bf, full_tag('DESCRIPTION', $level + 3, false, $row->description));
+            $status = $status && fwrite($bf, end_tag('ROW', $level + 2, true));
+        }
+        $status = $status && fwrite($bf, end_tag('ROWS', $level + 1, true));
+        $status = $status && fwrite($bf, start_tag('COLS', $level + 1, true));
+        foreach ($alldata->cols as $col)
+        {
+            $status = $status && fwrite($bf, start_tag('COL', $level + 2, true));
+            $status = $status && fwrite($bf, full_tag('ID', $level + 3, false, $col->id));
+            $status = $status && fwrite($bf, full_tag('MATRIXID', $level + 3, false, $col->matrixid));
+            $status = $status && fwrite($bf, full_tag('SHORTTEXT', $level + 3, false, $col->shorttext));
+            $status = $status && fwrite($bf, full_tag('DESCRIPTION', $level + 3, false, $col->description));
+            $status = $status && fwrite($bf, end_tag('COL', $level + 2, true));
+        }
+        $status = $status && fwrite($bf, end_tag('COLS', $level + 1, true));
+        $status = $status && fwrite($bf, start_tag('WEIGHTS', $level + 1, true));
+        foreach ($alldata->rawweights as $weight)
+        {
+            $status = $status && fwrite($bf, start_tag('WEIGHT', $level + 2, true));
+            $status = $status && fwrite($bf, full_tag('ID', $level + 3, false, $weight->id));
+            $status = $status && fwrite($bf, full_tag('ROWID', $level + 3, false, $weight->rowid));
+            $status = $status && fwrite($bf, full_tag('COLID', $level + 3, false, $weight->colid));
+            $status = $status && fwrite($bf, full_tag('WEIGHT', $level + 3, false, $weight->weight));
+            $status = $status && fwrite($bf, end_tag('WEIGHT', $level + 2, true));
+        }
+        $status = $status && fwrite($bf, end_tag('WEIGHTS', $level + 1, true));
+
+        $status = $status && fwrite($bf, end_tag('MATRIX', $level, true));
+        $status = question_backup_answers($bf, $preferences, $question);
+
+        return $status;
+    }
+
+    /**
+     * Restores the data in the question
+     *
+     * This is used in question/restorelib.php
+     */
+    function restore($old_question_id, $new_question_id, $info, $restore)
+    {
+        $status = begin_sql();
+
+        $minfo = $info['#']['MATRIX'];
+        $newmatrix = (object) array(
+                    'questionid' => $new_question_id,
+                    'grademethod' => backup_todb($minfo[0]['#']['GRADEMETHOD']['0']['#']),
+                    'multiple' => backup_todb($minfo[0]['#']['MULTIPLE']['0']['#']),
+                    'renderer' => backup_todb($minfo[0]['#']['RENDERER']['0']['#']),
+        );
+
+        $newmatrix->id = insert_record('question_matrix', $newmatrix);
+
+        $rows = $minfo[0]['#']['ROWS'][0]['#']['ROW']; // why does this get eaten?!
+        $rowmapping = array();
+        foreach ($rows as $row)
+        {
+            $row = $row['#']; // more nonsense
+            $newrow = (object) array(
+                        'matrixid' => $newmatrix->id,
+                        'shorttext' => backup_todb($row['SHORTTEXT']['0']['#']),
+                        'description' => backup_todb($row['DESCRIPTION']['0']['#']),
+            );
+            $status = $status && $rowmapping[backup_todb($row['ID']['0']['#'])] = insert_record('question_matrix_rows', $newrow);
+        }
+
+        $cols = $minfo[0]['#']['COLS'][0]['#']['COL']; // why does this get eaten?!
+        $colmapping = array();
+        foreach ($cols as $col)
+        {
+            $col = $col['#']; // more nonsense
+            $newcol = (object) array(
+                        'matrixid' => $newmatrix->id,
+                        'shorttext' => backup_todb($col['SHORTTEXT']['0']['#']),
+                        'description' => backup_todb($col['DESCRIPTION']['0']['#']),
+            );
+            $status = $status && $colmapping[backup_todb($col['ID']['0']['#'])] = insert_record('question_matrix_cols', $newcol);
+        }
+
+        $weights = $minfo[0]['#']['WEIGHTS'][0]['#']['WEIGHT'];
+        foreach ($weights as $weight)
+        {
+            $weight = $weight['#'];
+            $newweight = (object) array(
+                        'rowid' => $rowmapping[backup_todb($weight['ROWID'][0]['#'])],
+                        'colid' => $colmapping[backup_todb($weight['COLID'][0]['#'])],
+                        'weight' => backup_todb($weight['WEIGHT'][0]['#']),
+            );
+            $status = $status && insert_record('question_matrix_weights', $newweight);
+        }
+        return $status && commit_sql();
+    }
+
 
     /**
      * Add styles.css to the page's header
@@ -440,14 +542,6 @@ class matrix_qtype extends default_questiontype
     {
         return parent::get_html_head_contributions($question, $state);
     }
-
-    /**
-     * Add styles.css to the page's header
-     */
-//    function get_editing_head_contributions() {
-    //$this->require_once_css();
-//        parent::get_editing_head_contributions();
-//    }
 
     static function matrix_grading_options()
     {

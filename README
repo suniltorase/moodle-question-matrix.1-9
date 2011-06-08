@@ -15,14 +15,14 @@ Original work
 
         Any comments or bug reports; please email me.
 
-Backport to Moodle 1.9
+Backport from Moodle 2.0 to Moodle 1.9
 
         laurent.opprecht@unige.ch
         copyright 2011 University of Geneva
 
 1 make the 1.9 version compatible with the 2.0 version - i.e. uses the same name for db columns
 2 remove the need to patch moodle 1.9
-3 imcorporate changes made for 2.0
+3 incorporate changes made for 2.0
 
 Move to Moodle 2.0
 
